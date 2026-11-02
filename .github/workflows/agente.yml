@@ -2,8 +2,12 @@ name: Agente Kavroo
 
 on:
   schedule:
-    - cron: '0 10 * * 1'  # toda segunda-feira às 10h UTC
-  workflow_dispatch:       # permite rodar manualmente
+    - cron: '0 10 * * 1'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   agente:
@@ -13,7 +17,6 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          prompt: |
-            Você é um agente da loja Kavroo no Shopify.
-            Verifique se há produtos com variações sem cor configurada
-            e corrija os nomes das opções para "Color" e "Size".
+          trigger_phrase: "@claude"
+          mode: "autonomous"
+          model: "claude-sonnet-4-5"
