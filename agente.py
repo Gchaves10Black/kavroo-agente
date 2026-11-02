@@ -21,11 +21,47 @@ API_VERSION = "2024-01"
 # Modelo usado na análise. Troque aqui se quiser outro (ex.: claude-opus-5-5).
 MODEL = "claude-sonnet-5-5"
 
-SHOP_TOKEN = os.environ.get("SHOPIFY_ACCESS_TOKEN")
+STATIC_TOKEN = os.environ.get("SHOPIFY_ACCESS_TOKEN")      # modelo antigo (opcional)
+CLIENT_ID = os.environ.get("SHOPIFY_CLIENT_ID")            # Dev Dashboard
+CLIENT_SECRET = os.environ.get("SHOPIFY_CLIENT_SECRET")   # Dev Dashboard
 ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY")
 
-if not SHOP_TOKEN or not ANTHROPIC_KEY:
-    print("ERRO: faltam os secrets SHOPIFY_ACCESS_TOKEN e/ou ANTHROPIC_API_KEY.")
+if not ANTHROPIC_KEY:
+    print("ERRO: falta o secret ANTHROPIC_API_KEY.")
+    sys.exit(1)
+if not STATIC_TOKEN and not (CLIENT_ID and CLIENT_SECRET):
+    print("ERRO: configure SHOPIFY_ACCESS_TOKEN, ou SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET.")
+    sys.exit(1)
+
+
+def get_shop_token():
+    """Usa o token estatico se existir; senao troca client_id/secret por um
+    token de acesso via grant client_credentials (novo Dev Dashboard)."""
+    if STATIC_TOKEN:
+        return STATIC_TOKEN
+    url = f"https://{SHOP}/admin/oauth/access_token"
+    data = json.dumps({
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "grant_type": "client_credentials",
+    }).encode()
+    req = urllib.request.Request(
+        url,
+        data=data,
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return json.loads(r.read().decode())["access_token"]
+
+
+try:
+    SHOP_TOKEN = get_shop_token()
+except urllib.error.HTTPError as e:
+    print("ERRO ao obter token da Shopify:", e.code, e.read().decode()[:1000])
+    sys.exit(1)
+except Exception as e:  # noqa: BLE001
+    print("ERRO ao obter token da Shopify:", repr(e))
     sys.exit(1)
 
 
