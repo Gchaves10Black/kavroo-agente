@@ -168,6 +168,15 @@ except Exception as e:  # noqa: BLE001
 print("=" * 64)
 print(f"RELATÓRIO SEMANAL — AGENTE KAVROO  ({len(resumo)} produtos analisados)")
 print("=" * 64)
+
+printed = False
 for block in resp.get("content", []):
-    if block.get("type") == "text":
+    if block.get("type") == "text" and block.get("text", "").strip():
         print(block["text"])
+        printed = True
+
+if not printed:
+    print("A API respondeu, mas sem texto utilizável. Diagnóstico:")
+    diag = {k: resp.get(k) for k in ("model", "stop_reason", "stop_sequence", "usage", "type", "role")}
+    print(json.dumps(diag, ensure_ascii=False, indent=2))
+    print("content bruto:", json.dumps(resp.get("content"), ensure_ascii=False)[:1500])
