@@ -9,17 +9,26 @@ jobs:
   agente:
     runs-on: ubuntu-latest
     steps:
-      - name: Chamar Claude API
+      - name: Agente Kavroo - Gerenciar Loja
         run: |
-          curl https://api.anthropic.com/v1/messages \
+          curl -s https://api.anthropic.com/v1/messages \
             -H "x-api-key: ${{ secrets.ANTHROPIC_API_KEY }}" \
             -H "anthropic-version: 2023-06-01" \
             -H "content-type: application/json" \
             -d '{
               "model": "claude-opus-4-5",
-              "max_tokens": 1024,
+              "max_tokens": 4096,
               "messages": [{
                 "role": "user",
-                "content": "Diga ok se esta funcionando."
+                "content": "Você é um agente de dropshipping da loja Kavroo. Acesse a Shopify API: GET https://s2tecy-9k.myshopify.com/admin/api/2024-01/products.json com header X-Shopify-Access-Token: ${{ secrets.SHOPIFY_ACCESS_TOKEN }}. Analise os produtos e sugira melhorias. Responda em português."
               }]
-            }'
+            }' | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          if 'content' in data:
+              for block in data['content']:
+                  if block.get('type') == 'text':
+                      print(block['text'])
+          else:
+              print('Erro:', json.dumps(data, indent=2))
+          "
