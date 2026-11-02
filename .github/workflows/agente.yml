@@ -5,18 +5,21 @@ on:
     - cron: '0 10 * * 1'
   workflow_dispatch:
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   agente:
     runs-on: ubuntu-latest
     steps:
-      - name: Rodar agente Claude
-        uses: anthropics/claude-code-action@beta
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          trigger_phrase: "@claude"
-          mode: "autonomous"
-          model: "claude-sonnet-4-5"
+      - name: Chamar Claude API
+        run: |
+          curl https://api.anthropic.com/v1/messages \
+            -H "x-api-key: ${{ secrets.ANTHROPIC_API_KEY }}" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d '{
+              "model": "claude-opus-4-5",
+              "max_tokens": 1024,
+              "messages": [{
+                "role": "user",
+                "content": "Diga ok se esta funcionando."
+              }]
+            }'
